@@ -1,0 +1,19 @@
+[
+  {
+    "op": "load_const",
+    "const": 100,
+    "reg": 2
+  },
+  {
+    "op": "write_mem",
+    "offset": 200,
+    "base_reg": 2,
+    "src_reg": 4
+  },
+  {
+    "op": "ror",
+    "src1_reg": 3,
+    "src2_reg": 4,
+    "dst_reg": 5
+  }
+]
