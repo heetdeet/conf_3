@@ -121,6 +121,56 @@ R6 = R1 >> R2
     
     return test_code
 
+def validate_numbers(intermediate):
+    """
+    Проверяет корректность числовых значений в промежуточном представлении.
+    """
+    errors = []
+    
+    for i, cmd in enumerate(intermediate):
+        op = cmd["op"]
+        fields = cmd["fields"]
+        
+        if op == "load_const":
+            const = fields["B"]
+            reg = fields["C"]
+            if not (0 <= const < 2**14):  # 0..16383
+                errors.append(f"Команда {i}: Константа {const} вне диапазона 0..16383")
+            if not (0 <= reg < 8):  # 0..7
+                errors.append(f"Команда {i}: Регистр {reg} вне диапазона 0..7")
+        
+        elif op == "read_mem":
+            src_reg = fields["B"]
+            dst_reg = fields["C"]
+            if not (0 <= src_reg < 8):
+                errors.append(f"Команда {i}: Исходный регистр {src_reg} вне диапазона 0..7")
+            if not (0 <= dst_reg < 8):
+                errors.append(f"Команда {i}: Регистр назначения {dst_reg} вне диапазона 0..7")
+        
+        elif op == "write_mem":
+            offset = fields["B"]
+            base_reg = fields["C"]
+            src_reg = fields["D"]
+            if not (0 <= offset < 2**16):  # 0..65535
+                errors.append(f"Команда {i}: Смещение {offset} вне диапазона 0..65535")
+            if not (0 <= base_reg < 8):
+                errors.append(f"Команда {i}: Базовый регистр {base_reg} вне диапазона 0..7")
+            if not (0 <= src_reg < 8):
+                errors.append(f"Команда {i}: Исходный регистр {src_reg} вне диапазона 0..7")
+        
+        elif op == "ror":
+            src1_reg = fields["B"]
+            src2_reg = fields["C"]
+            dst_reg = fields["D"]
+            if not (0 <= src1_reg < 8):
+                errors.append(f"Команда {i}: Исходный регистр 1 {src1_reg} вне диапазона 0..7")
+            if not (0 <= src2_reg < 8):
+                errors.append(f"Команда {i}: Исходный регистр 2 {src2_reg} вне диапазона 0..7")
+            if not (0 <= dst_reg < 8):
+                errors.append(f"Команда {i}: Регистр назначения {dst_reg} вне диапазона 0..7")
+    
+    return errors
+
 def main():
     parser = argparse.ArgumentParser(description="Ассемблер УВМ (вариант 16) - Этап 1")
     parser.add_argument("input", help="Путь к исходному файлу с текстом программы (.asm)")
@@ -134,11 +184,11 @@ def main():
         print("1. Создание тестовой программы из спецификации...")
         
         # Создаем тестовую программу
-        test_code = create_test_program()
+        #test_code = create_test_program()
         print("Создан файл test_program.asm")
         print("\nСодержимое тестовой программы:")
         print("-" * 40)
-        print(test_code)
+        #print(test_code)
         print("-" * 40)
         
         print("\n2. Парсинг тестовой программы...")
@@ -176,10 +226,21 @@ def main():
         
         print("\n4. Тестирование пользовательской программы...")
     
-    # jбработка пользовательской программы
+    # обработка пользовательской программы
     try:
         intermediate = parse_assembly(args.input)
         print(f"Успешно разобрано {len(intermediate)} команд из файла '{args.input}'.")
+        
+        # ПРОВЕРКА ЧИСЕЛ
+        if args.validate or args.test:
+            print("\n=== Проверка числовых значений ===")
+            errors = validate_numbers(intermediate)
+            if errors:
+                print("Найдены ошибки:")
+                for error in errors:
+                    print(f"  {error}")
+            else:
+                print("Все числовые значения в допустимых диапазонах")
         
         if args.test:
             print_intermediate_test_format(intermediate)
